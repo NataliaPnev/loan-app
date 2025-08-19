@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-
+import {test, expect, Route} from '@playwright/test';
 const serviceURL = 'http://localhost:3000';
 
 test('main flow', async ({ page }) => {
@@ -20,5 +19,21 @@ test('redirect flow', async ({ page, request }) => {
   await expect( page.getByTestId('id-small-loan-calculator-field-apply') ).toBeInViewport()
   await page.getByTestId('id-image-element-button-image-2').click();
   await expect( page.getByTestId('id-small-loan-calculator-field-apply') ).toBeInViewport()
+})
+
+test('Error message case', async ({ page, request }) => {
+  await page.route('**/api/loan-calc?amount=*&period=*', async (route: Route) => {
+    const request = route.request();
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 400,
+      })
+    } else {
+      await route.continue()
+    }
+  })
+  await page.goto(serviceURL);
+  const errorElement = await page.getByTestId('id-small-loan-calculator-field-error');
+  await expect(errorElement).toHaveText('Oops, something went wrong');
 })
 
